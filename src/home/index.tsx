@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router'
 import './style.css'
 
@@ -14,15 +14,22 @@ interface Product {
   }
 }
 
+interface Filters {
+  searchName: string
+  category: string
+  minPrice: string
+  maxPrice: string
+}
+
 function Home() {
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<string[]>([])
-
-  const [searchName, setSearchName] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
+  const [filters, setFilters] = useState<Filters>({
+    searchName: '',
+    category: '',
+    minPrice: '',
+    maxPrice: ''
+  })
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -30,8 +37,6 @@ function Home() {
         const res = await fetch('https://fakestoreapi.com/products')
         const data: Product[] = await res.json()
         setProducts(data)
-        setFilteredProducts(data)
-
         localStorage.setItem('allProducts', JSON.stringify(data))
 
         const uniqueCategories = [...new Set(data.map(p => p.category))]
@@ -44,29 +49,27 @@ function Home() {
     fetchProducts()
   }, [])
 
-  useEffect(() => {
-    let filtered = products
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      if (filters.searchName && !p.title.toLowerCase().includes(filters.searchName.toLowerCase())) {
+        return false
+      }
+      if (filters.category && p.category !== filters.category) {
+        return false
+      }
+      if (filters.minPrice && p.price < parseFloat(filters.minPrice)) {
+        return false
+      }
+      if (filters.maxPrice && p.price > parseFloat(filters.maxPrice)) {
+        return false
+      }
+      return true
+    })
+  }, [products, filters])
 
-    if (searchName) {
-      filtered = filtered.filter(p =>
-        p.title.toLowerCase().includes(searchName.toLowerCase())
-      )
-    }
-
-    if (selectedCategory) {
-      filtered = filtered.filter(p => p.category === selectedCategory)
-    }
-
-    if (minPrice) {
-      filtered = filtered.filter(p => p.price >= parseFloat(minPrice))
-    }
-
-    if (maxPrice) {
-      filtered = filtered.filter(p => p.price <= parseFloat(maxPrice))
-    }
-
-    setFilteredProducts(filtered)
-  }, [searchName, selectedCategory, minPrice, maxPrice, products])
+  const handleFilterChange = (filterName: keyof Filters, value: string) => {
+    setFilters(prev => ({ ...prev, [filterName]: value }))
+  }
 
   return (
     <div className="home-container">
@@ -78,16 +81,16 @@ function Home() {
           <input
             type="text"
             placeholder="Buscar producto..."
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
+            value={filters.searchName}
+            onChange={(e) => handleFilterChange('searchName', e.target.value)}
           />
         </div>
 
         <div className="filter-group">
           <label>Categoría:</label>
           <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={filters.category}
+            onChange={(e) => handleFilterChange('category', e.target.value)}
           >
             <option value="">Todas las categorías</option>
             {categories.map(cat => (
@@ -101,8 +104,8 @@ function Home() {
           <input
             type="number"
             placeholder="0"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
+            value={filters.minPrice}
+            onChange={(e) => handleFilterChange('minPrice', e.target.value)}
           />
         </div>
 
@@ -111,8 +114,8 @@ function Home() {
           <input
             type="number"
             placeholder="1000"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
+            value={filters.maxPrice}
+            onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
           />
         </div>
       </div>

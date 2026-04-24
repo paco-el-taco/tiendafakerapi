@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import './style.css'
 
 interface CartItem {
@@ -48,9 +48,11 @@ function Original() {
     localStorage.setItem('cart', JSON.stringify([]))
   }
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const tax = subtotal * 0.1
-  const total = subtotal + tax
+  const totals = useMemo(() => {
+    const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const tax = subtotal * 0.1
+    return { subtotal, tax, total: subtotal + tax }
+  }, [cartItems])
 
   return (
     <div className="carrito-container">
@@ -96,15 +98,15 @@ function Original() {
           <div className="cart-summary">
             <div className="summary-row">
               <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>${totals.subtotal.toFixed(2)}</span>
             </div>
             <div className="summary-row">
               <span>Impuesto (10%):</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>${totals.tax.toFixed(2)}</span>
             </div>
             <div className="summary-row total">
               <span>Total:</span>
-              <span>${total.toFixed(2)}</span>
+              <span>${totals.total.toFixed(2)}</span>
             </div>
 
             <button className="checkout-button">Proceder al pago</button>
