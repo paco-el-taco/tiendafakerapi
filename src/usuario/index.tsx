@@ -20,7 +20,7 @@ function Usuario() {
   }
 
   if (isLoadingUser) {
-    return <div className="loading">Cargando...</div>
+    return <div className="loading">Cargando....</div>
   }
 
   if (!currentUser) {
